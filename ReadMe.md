@@ -1013,3 +1013,176 @@ These steps should help you effectively add and configure logging in your Spring
 ### We have implemented simple logging in the application this is for extra info 
 
 ## Exception handling in Spring Boot 
+In Spring Boot, **exception handling** can be managed using a variety of approaches that allow you to control how exceptions are handled at different layers of an application. Proper exception handling makes your application robust and user-friendly by providing meaningful responses when something goes wrong.
+
+### 1. **Global Exception Handling Using `@ControllerAdvice`**
+The `@ControllerAdvice` annotation is used to handle exceptions globally, meaning it can catch exceptions thrown across the entire application, across different controllers.
+
+#### Example:
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Handle specific exception
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(ex.getMessage(), request.getDescription(false));
+        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+    }
+
+    // Handle global exception
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(ex.getMessage(), request.getDescription(false));
+        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+```
+
+Here:
+- `@ControllerAdvice`: Marks the class as a global exception handler.
+- `@ExceptionHandler`: Defines the method as the handler for specific exceptions. It returns a custom `ErrorDetails` object and HTTP status code.
+
+### 2. **Custom Exception Classes**
+Creating custom exception classes allows you to define exceptions that are specific to your application’s domain or logic.
+
+#### Example of a Custom Exception:
+```java
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+```
+
+#### Error Details Class:
+```java
+public class ErrorDetails {
+    private String message;
+    private String details;
+
+    public ErrorDetails(String message, String details) {
+        this.message = message;
+        this.details = details;
+    }
+
+    // Getters and Setters
+}
+```
+
+### 3. **Exception Handling with `@ResponseStatus`**
+You can annotate custom exception classes with `@ResponseStatus` to set a specific HTTP status when the exception is thrown.
+
+#### Example:
+```java
+@ResponseStatus(value = HttpStatus.NOT_FOUND)
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+```
+- In this case, when the `ResourceNotFoundException` is thrown, it will automatically return a `404 NOT FOUND` response.
+
+### 4. **Handling Validation Errors (Method Argument Not Valid)**
+When using validation (such as Hibernate Validator) in Spring Boot, you may need to handle validation errors.
+
+#### Example:
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Handle validation errors
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return errors;
+    }
+}
+```
+This will return a `400 Bad Request` when a validation error occurs, along with a map containing the field and error message.
+
+### 5. **`@ResponseEntityExceptionHandler`**
+Spring provides `ResponseEntityExceptionHandler`, which offers centralized exception handling across all `@RequestMapping` methods. You can override methods from this class for specific exceptions.
+
+#### Example:
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+@ControllerAdvice
+public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+                                                                  HttpHeaders headers,
+                                                                  HttpStatus status,
+                                                                  WebRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+            errors.put(error.getField(), error.getDefaultMessage()));
+        
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+}
+```
+
+### 6. **Using `@ExceptionHandler` in Controllers**
+You can also handle exceptions locally within a specific controller using `@ExceptionHandler`.
+
+#### Example:
+```java
+@RestController
+@RequestMapping("/api")
+public class MyController {
+
+    @GetMapping("/resource/{id}")
+    public ResponseEntity<?> getResource(@PathVariable("id") Long id) {
+        if (id == null) {
+            throw new ResourceNotFoundException("Resource not found for ID: " + id);
+        }
+        return ResponseEntity.ok("Resource found");
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        ErrorDetails errorDetails = new ErrorDetails(ex.getMessage(), "Resource not found");
+        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+    }
+}
+```
+
+### Best Practices for Exception Handling in Spring Boot
+1. **Use Specific Exceptions**: Create custom exceptions for specific error scenarios.
+2. **Global Exception Handling**: Use `@ControllerAdvice` for consistent global exception handling.
+3. **Custom Error Responses**: Define custom error response classes for meaningful error information.
+4. **HTTP Status Codes**: Ensure appropriate status codes are returned for various exceptions.
+5. **Logging**: Log exceptions and errors for better traceability and debugging.
+
+By following these practices, you ensure a smooth user experience and provide meaningful feedback to users when exceptions occur in your Spring Boot application.
