@@ -2,6 +2,9 @@ package com.LearnSpring.OneShot.controller;
 
 import com.LearnSpring.OneShot.entity.Department; // Importing the Department entity
 import com.LearnSpring.OneShot.service.IDepartmentService; // Importing the Department service interface
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired; // For dependency injection
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +19,7 @@ public class DepartmentController {
 
     // Service layer dependency to handle business logic for departments
     private IDepartmentService departmentService;
+    private final Logger LOGGER = LoggerFactory.getLogger(DepartmentController.class);
 
     /**
      * Constructor-based dependency injection of the department service.
@@ -36,7 +40,8 @@ public class DepartmentController {
      * @return The saved department object.
      */
     @PostMapping("/departments")
-    public Department saveDepartment(@RequestBody Department department) {
+    public Department saveDepartment(@Valid @RequestBody Department department) {
+        LOGGER.info("Inside saveDepartment of DepartmentController");
         // Calling the service layer to save the department and returning the saved department
         return departmentService.saveDepartment(department);
     }
@@ -49,6 +54,7 @@ public class DepartmentController {
      */
     @GetMapping("/departments")
     public List<Department> fetchAllDepartmentList() {
+        LOGGER.info("Inside fetchAllDepartmentList of DepartmentController");
         // Calling the service layer to retrieve all departments and returning the list
         return departmentService.fetchAllDepartmentList();
     }
