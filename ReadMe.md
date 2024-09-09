@@ -247,6 +247,178 @@ In a Spring Boot project, JPA handles the interaction between your entities and 
       <optional>true</optional>
     </dependency>
 ```
+## Lombok
+Lombok is a Java library that simplifies the development process by reducing boilerplate code. It provides a set of annotations that automatically generate common methods, such as getters, setters, constructors, and more, at compile time. This can significantly reduce the amount of code you have to write and maintain.
+
+### Key Features and Annotations of Lombok
+
+1. **`@Getter` and `@Setter`**:
+    - **Purpose**: Automatically generates getter and setter methods for all fields in a class.
+    - **Usage**:
+      ```java
+      @Getter @Setter
+      public class Person {
+          private String name;
+          private int age;
+      }
+      ```
+
+2. **`@ToString`**:
+    - **Purpose**: Automatically generates the `toString` method for the class, including specified fields.
+    - **Usage**:
+      ```java
+      @ToString
+      public class Person {
+          private String name;
+          private int age;
+      }
+      ```
+
+    - **Customizing**:
+      ```java
+      @ToString(onlyExplicitlyIncluded = true)
+      public class Person {
+          @ToString.Include
+          private String name;
+          private int age;
+      }
+      ```
+
+3. **`@EqualsAndHashCode`**:
+    - **Purpose**: Automatically generates `equals` and `hashCode` methods based on the fields of the class.
+    - **Usage**:
+      ```java
+      @EqualsAndHashCode
+      public class Person {
+          private String name;
+          private int age;
+      }
+      ```
+
+    - **Customizing**:
+      ```java
+      @EqualsAndHashCode(of = "name")
+      public class Person {
+          private String name;
+          private int age;
+      }
+      ```
+
+4. **`@NoArgsConstructor`, `@AllArgsConstructor`, and `@RequiredArgsConstructor`**:
+    - **Purpose**: Automatically generates constructors.
+        - `@NoArgsConstructor`: Creates a no-argument constructor.
+        - `@AllArgsConstructor`: Creates a constructor with all arguments.
+        - `@RequiredArgsConstructor`: Creates a constructor with required arguments (final fields and fields marked with `@NonNull`).
+    - **Usage**:
+      ```java
+      @NoArgsConstructor
+      @AllArgsConstructor
+      public class Person {
+          private String name;
+          private int age;
+      }
+      ```
+
+5. **`@Data`**:
+    - **Purpose**: Combines `@Getter`, `@Setter`, `@ToString`, `@EqualsAndHashCode`, and `@RequiredArgsConstructor` in a single annotation.
+    - **Usage**:
+      ```java
+      @Data
+      public class Person {
+          private String name;
+          private int age;
+      }
+      ```
+
+6. **`@Builder`**:
+    - **Purpose**: Provides a builder pattern for constructing objects.
+    - **Usage**:
+      ```java
+      @Builder
+      public class Person {
+          private String name;
+          private int age;
+      }
+      ```
+
+    - **Example**:
+      ```java
+      Person person = Person.builder()
+                            .name("John")
+                            .age(30)
+                            .build();
+      ```
+
+7. **`@Slf4j`, `@Log4j2`, etc.**:
+    - **Purpose**: Provides logging capabilities by creating a logger instance.
+    - **Usage**:
+      ```java
+      @Slf4j
+      public class MyService {
+          public void performAction() {
+              log.info("Action performed");
+          }
+      }
+      ```
+
+    - **Other Loggers**:
+        - `@Log` for `java.util.logging`
+        - `@Log4j` for Apache Log4j 1.x
+        - `@Log4j2` for Apache Log4j 2.x
+        - `@CommonsLog` for Apache Commons Logging
+
+8. **`@Value`**:
+    - **Purpose**: Creates an immutable class with final fields, and provides `@Getter`, `@RequiredArgsConstructor`, `@ToString`, and `@EqualsAndHashCode`.
+    - **Usage**:
+      ```java
+      @Value
+      public class Person {
+          private String name;
+          private int age;
+      }
+      ```
+
+9. **`@NonNull`**:
+    - **Purpose**: Ensures that a field is not null and throws a `NullPointerException` if it is.
+    - **Usage**:
+      ```java
+      public class Person {
+          @NonNull
+          private String name;
+      }
+      ```
+
+### Benefits of Using Lombok
+
+1. **Reduces Boilerplate Code**: Lombok helps in writing less code by generating common methods and boilerplate code.
+2. **Improves Readability**: The code becomes cleaner and more readable as it focuses on business logic rather than repetitive code.
+3. **Enhances Maintainability**: Less code means fewer places to update if the data structure changes.
+4. **Standardization**: By using annotations, you maintain consistency across the codebase.
+
+### How to Add Lombok to a Spring Boot Project
+
+1. **Add Lombok Dependency**:
+
+   **For Maven:**
+   ```xml
+   <dependency>
+       <groupId>org.projectlombok</groupId>
+       <artifactId>lombok</artifactId>
+       <version>1.18.24</version>
+       <scope>provided</scope>
+   </dependency>
+   ```
+
+   **For Gradle:**
+   ```groovy
+   implementation 'org.projectlombok:lombok:1.18.24'
+   ```
+
+2. **Enable Annotation Processing**:
+    - In **IDEA IntelliJ**, enable annotation processing: `File` -> `Settings` -> `Build, Execution, Deployment` -> `Compiler` -> `Annotation Processors` -> `Enable annotation processing`.
+    - In **Eclipse**, ensure annotation processing is enabled: `Project` -> `Properties` -> `Java Compiler` -> `Annotation Processing` -> `Enable annotation processing`.
+
+Lombok is a powerful tool for reducing boilerplate code and enhancing the clarity and maintainability of Java applications. However, it's essential to use it judiciously and understand the code it generates to avoid potential issues during development and debugging.
   - Create a department entity in entity package
 ```java
 package com.LearnSpring.OneShot.entity;
@@ -527,4 +699,317 @@ public interface IDepartmentRepository extends JpaRepository<Department, Long> {
 
 ![Save Department API Testing](./ReadmeImg/OutputInsomina.png)
 
+## This way we will create all other APIs  
 
+### APIs Implemented :
+ **Note : for the following APIs kindly view the source code and follow the paths provided in this doc to know the flow** 
+
+#### Basic Crud
+- List All Departments 
+- Get Department By Id
+- Delete Department By Id
+- Update Department By Id
+
+#### Extra Endpoints
+**Note : For creating your own query methods in JPA Refer**
+[here](https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html)
+
+- Find By Department Name
+### Find the final version of the Department related classes and learn through comments
+
+# Hibernate Validations
+Hibernate Validator is the reference implementation of the Bean Validation specification (JSR 380). In Spring Boot, Hibernate Validator is integrated to help validate JavaBeans (objects) based on constraints defined in the Java code. This ensures that data meets specific criteria before it is processed or persisted.
+
+### Key Concepts
+
+1. **Bean Validation Specification (JSR 380)**:
+    - **Purpose**: Defines a standard way to validate JavaBeans using annotations.
+    - **Annotations**: Provides built-in annotations like `@NotNull`, `@Size`, `@Min`, `@Max`, etc., for defining constraints on bean properties.
+
+2. **Hibernate Validator**:
+    - **Implementation**: Hibernate Validator is the default implementation of JSR 380. It provides additional constraints and features on top of the standard ones.
+    - **Integration**: Spring Boot includes Hibernate Validator by default, so you don’t need to add it manually.
+
+### Setting Up Hibernate Validator in Spring Boot
+
+1. **Add Dependencies**:
+    - Spring Boot automatically includes Hibernate Validator. If you are using Spring Boot Starter, it should already be included. If not, ensure you have the following dependency in your `pom.xml` (for Maven):
+
+      ```xml
+      <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-validation</artifactId>
+      </dependency>
+      ```
+
+    - For Gradle, include:
+
+      ```groovy
+      implementation 'org.springframework.boot:spring-boot-starter-validation'
+      ```
+
+2. **Define Constraints**:
+    - Use Bean Validation annotations on your model class to define constraints. For example:
+
+      ```java
+      import javax.validation.constraints.NotNull;
+      import javax.validation.constraints.Size;
+      import javax.validation.constraints.Min;
+      import javax.validation.constraints.Max;
+ 
+      public class Department {
+          
+          @NotNull
+          private Long id;
+ 
+          @Size(min = 2, max = 30)
+          private String departmentName;
+ 
+          @Min(1)
+          @Max(100)
+          private Integer departmentCode;
+ 
+          // Getters and setters
+      }
+      ```
+
+3. **Validation in Controllers**:
+    - To enforce validation in a Spring Boot controller, use the `@Valid` annotation with a `@RequestBody` or `@ModelAttribute`. For example:
+
+      ```java
+      import org.springframework.web.bind.annotation.PostMapping;
+      import org.springframework.web.bind.annotation.RequestBody;
+      import org.springframework.web.bind.annotation.RestController;
+      import javax.validation.Valid;
+ 
+      @RestController
+      public class DepartmentController {
+          
+          @PostMapping("/departments")
+          public Department saveDepartment(@Valid @RequestBody Department department) {
+              // Save the department
+              return department;
+          }
+      }
+      ```
+
+    - If the data does not meet the constraints, a `MethodArgumentNotValidException` will be thrown, and Spring Boot will handle it by returning a suitable response.
+
+4. **Custom Constraints**:
+    - You can also define custom validation constraints by creating your own annotations and validators.
+
+      ```java
+      import javax.validation.Constraint;
+      import javax.validation.Payload;
+      import java.lang.annotation.ElementType;
+      import java.lang.annotation.Retention;
+      import java.lang.annotation.RetentionPolicy;
+      import java.lang.annotation.Target;
+ 
+      @Target({ElementType.FIELD})
+      @Retention(RetentionPolicy.RUNTIME)
+      @Constraint(validatedBy = CustomValidator.class)
+      public @interface ValidCustom {
+          String message() default "Invalid value";
+          Class<?>[] groups() default {};
+          Class<? extends Payload>[] payload() default {};
+      }
+      ```
+
+      And the corresponding validator:
+
+      ```java
+      import javax.validation.ConstraintValidator;
+      import javax.validation.ConstraintValidatorContext;
+ 
+      public class CustomValidator implements ConstraintValidator<ValidCustom, String> {
+          @Override
+          public void initialize(ValidCustom constraintAnnotation) {}
+ 
+          @Override
+          public boolean isValid(String value, ConstraintValidatorContext context) {
+              // Custom validation logic
+              return value != null && value.matches("^[A-Za-z]*$");
+          }
+      }
+      ```
+
+### Benefits
+
+- **Consistency**: Provides a standardized way to validate objects.
+- **Automatic Validation**: Automatically validates input data before it reaches the business logic layer.
+- **Customizable**: Allows you to create custom validation logic to meet specific needs.
+- **Integration**: Seamlessly integrates with Spring Boot and Spring MVC.
+
+Hibernate Validator in Spring Boot simplifies the process of validating objects and ensures that only valid data is processed, helping to maintain the integrity and quality of data in your application.
+
+## We have added the validation in Department entity 
+# Adding Loggers
+Adding logging to a Spring Boot application is straightforward thanks to its built-in support for various logging frameworks. By default, Spring Boot uses `Logback`, but you can easily configure it to use other logging frameworks like `Log4j2` or `Java Util Logging`.
+
+Here’s a guide on how to add and configure loggers in a Spring Boot application:
+
+### 1. **Default Logging with Spring Boot**
+
+Spring Boot uses `Logback` as the default logging framework. To use it, you don’t need to add any additional dependencies since it comes pre-configured.
+
+### 2. **Add Logging Dependencies**
+
+If you need to use a different logging framework, add the appropriate dependencies. For example, to use `Log4j2`, you need to exclude `Logback` and add `Log4j2` dependencies.
+
+**For Log4j2 (Maven):**
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-log4j2</artifactId>
+</dependency>
+```
+
+**For Log4j2 (Gradle):**
+
+```groovy
+implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+```
+
+**Exclude Logback if using Log4j2 (Maven):**
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-logback</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+```
+
+**Exclude Logback if using Log4j2 (Gradle):**
+
+```groovy
+implementation('org.springframework.boot:spring-boot-starter') {
+    exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logback'
+}
+```
+
+### 3. **Configuring Loggers**
+
+Spring Boot uses `application.properties` or `application.yml` for configuration. You can set logging levels, patterns, and other settings.
+
+**Using `application.properties`:**
+
+```properties
+# Set logging level for a specific package
+logging.level.com.example=DEBUG
+
+# Set logging level for all packages
+logging.level.root=INFO
+
+# Configure logging pattern
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
+
+# Configure log file settings
+logging.file.name=app.log
+logging.file.path=/var/logs
+```
+
+**Using `application.yml`:**
+
+```yaml
+logging:
+  level:
+    com.example: DEBUG
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: app.log
+    path: /var/logs
+```
+
+### 4. **Using Loggers in Code**
+
+To use a logger in your Spring Boot application, you can use the `Logger` class from the logging framework.
+
+**Example with SLF4J (which is used by Spring Boot’s default Logback):**
+
+```java
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api")
+public class MyController {
+
+    private static final Logger logger = LoggerFactory.getLogger(MyController.class);
+
+    @GetMapping("/log")
+    public String logExample() {
+        logger.info("This is an info message");
+        logger.warn("This is a warning message");
+        logger.error("This is an error message");
+        return "Logging example";
+    }
+}
+```
+
+### 5. **Custom Logback Configuration**
+
+If you need custom configuration for `Logback`, you can add a `logback-spring.xml` or `logback.xml` file in the `src/main/resources` directory.
+
+**Example `logback-spring.xml`:**
+
+```xml
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
+```
+
+### 6. **Log4j2 Configuration**
+
+For `Log4j2`, create a `log4j2-spring.xml` or `log4j2.xml` in `src/main/resources`.
+
+**Example `log4j2-spring.xml`:**
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
+```
+
+### Summary
+
+- **Default**: Spring Boot uses `Logback` by default.
+- **Custom Logging Framework**: Add the relevant dependencies and exclude the default ones if necessary.
+- **Configuration**: Set logging levels and patterns in `application.properties` or `application.yml`.
+- **Code Usage**: Use `Logger` from SLF4J to log messages in your application.
+- **Custom Configurations**: Use `logback-spring.xml` or `log4j2-spring.xml` for advanced configuration.
+
+These steps should help you effectively add and configure logging in your Spring Boot application.
+### We have implemented simple logging in the application this is for extra info 
+
+## Exception handling in Spring Boot 

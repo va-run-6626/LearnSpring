@@ -10,5 +10,22 @@ import org.springframework.stereotype.Repository; // Importing the Repository an
  */
 @Repository
 public interface IDepartmentRepository extends JpaRepository<Department, Long> {
-    // No additional methods are defined here. JpaRepository provides basic CRUD operations out-of-the-box.
+
+    /**
+     * Finds a department by its name.
+     * The method is automatically implemented by Spring Data JPA based on the method name convention.
+     *
+     * @param departmentName The name of the department to be retrieved.
+     * @return The department object with the specified name.
+     */
+    public Department findByDepartmentName(String departmentName);
+
+    /**
+     * Finds a department by its name, ignoring case.
+     * The method is automatically implemented by Spring Data JPA based on the method name convention.
+     *
+     * @param departmentName The name of the department to be retrieved.
+     * @return The department object with the specified name, case-insensitive.
+     */
+    public Department findByDepartmentNameIgnoreCase(String departmentName);
 }
