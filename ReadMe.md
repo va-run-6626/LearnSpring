@@ -227,4 +227,304 @@ In a Spring Boot project, JPA handles the interaction between your entities and 
 # Now we can Start with our code
 ## Step 1: 
   - Add Configurarions for **H2** and **JPA**
-  - 
+  - as mentioned in [How to Use H2 in Spring Boot](#how-to-use-h2-in-spring-boot)
+```properties
+    spring.h2.console.enabled=true
+    spring.datasource.url=jdbc:h2:mem:dcbapp
+    spring.datasource.driverClassName=org.h2.Driver
+    spring.datasource.username=sa
+    spring.datasource.password=password
+    spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+    spring.jpa.hibernate.ddl-auto=update
+```
+## Step 2:
+  - Create entity, service, repository, config and controller Packages
+  - Add lombok dependency 
+```xml
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <optional>true</optional>
+    </dependency>
+```
+  - Create a department entity in entity package
+```java
+package com.LearnSpring.OneShot.entity;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+public class Department {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long departmentId;
+    private String departmentName;
+    private String departmentAddress;
+    private String departmentCode;
+}
+
+```
+- Create a Deprtment Controller controller in controller package
+### Important Interface + Class
+Creating an **interface** for a **service** and **repository** in software development, especially in frameworks like Spring Boot, follows a **standard design approach** that promotes clean architecture, flexibility, and maintainability. This approach adheres to well-known principles of software design like **SOLID** principles and **Separation of Concerns**.
+
+### **Key Reasons for Creating Interfaces Before Implementation:**
+
+1. **Decoupling and Flexibility:**
+  - By defining an interface, the service or repository logic is decoupled from its implementation. This means the client (which could be another class or layer) only depends on the **interface** and not the **implementation**, promoting **loose coupling**.
+  - It allows you to switch the implementation easily. For example, if you need to replace your repository’s database implementation (e.g., from H2 to MySQL), you can just create a new implementation of the interface without modifying the code that uses the repository.
+
+2. **Abstraction**:
+  - The interface provides an **abstract contract** that defines what a service or repository is supposed to do without exposing the internal details of how it does it. This simplifies interactions between layers (e.g., service and controller layers) by hiding unnecessary details.
+
+3. **Testability**:
+  - Interfaces make **unit testing** and **mocking** much easier. For instance, if you're testing the service layer, you can mock the repository interface without worrying about the actual repository implementation.
+  - Tools like **Mockito** allow you to create mocks of interfaces so that tests focus only on the logic of the method under test, not on external dependencies like databases.
+
+4. **Interchangeable Implementations**:
+  - You can have multiple implementations of the same interface. For example:
+    - A `UserRepository` interface can have different implementations for **SQL** databases, **NoSQL** databases, or even **in-memory** databases.
+    - A `NotificationService` interface could have multiple implementations like **EmailNotificationService**, **SMSNotificationService**, or **PushNotificationService**.
+  - This is especially useful in projects where different environments or features require different implementations.
+
+5. **Follows SOLID Principles**:
+  - **Interface Segregation Principle (ISP)**: This principle suggests that clients should not be forced to depend on interfaces they do not use. By creating smaller, specialized interfaces for each service or repository, you ensure that classes only depend on what they need.
+  - **Dependency Inversion Principle (DIP)**: High-level modules (like controllers) should depend on abstractions (interfaces), not on low-level modules (implementations). This makes it easier to maintain and extend the application as the high-level modules don’t need to be aware of the implementation details.
+
+6. **Separation of Concerns (SoC)**:
+  - Defining an interface and then creating an implementation separates the contract (what the service/repository should do) from the logic (how it is done). This division helps in keeping the code clean and modular.
+
+### Example Approach: Service and Repository Interface in Spring Boot
+
+#### 1. **Repository Interface:**
+```java
+// Define the contract for repository
+public interface UserRepository {
+    User findUserById(Long id);
+    void saveUser(User user);
+}
+```
+
+#### 2. **Repository Implementation:**
+```java
+// Implementation of repository, could interact with a database
+@Repository
+public class UserRepositoryImpl implements UserRepository {
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @Override
+    public User findUserById(Long id) {
+        return entityManager.find(User.class, id);
+    }
+
+    @Override
+    public void saveUser(User user) {
+        entityManager.persist(user);
+    }
+}
+```
+
+#### 3. **Service Interface:**
+```java
+// Define the service interface
+public interface UserService {
+    User getUserById(Long id);
+    void createUser(User user);
+}
+```
+
+#### 4. **Service Implementation:**
+```java
+// Implementation of service that interacts with the repository
+@Service
+public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public User getUserById(Long id) {
+        return userRepository.findUserById(id);
+    }
+
+    @Override
+    public void createUser(User user) {
+        userRepository.saveUser(user);
+    }
+}
+```
+
+### **Advantages of This Approach:**
+- **Modularity**: Each part of the codebase (controller, service, repository) only needs to know about the interfaces, not the concrete implementations.
+- **Easier Refactoring**: Since the code depends on interfaces, you can change the implementation details (e.g., changing the database technology) without affecting other parts of the application.
+- **Maintainability**: It’s easier to maintain and extend as business logic changes over time. Implementations can evolve independently as long as they adhere to the interface contract.
+- **Scalability**: As applications grow in complexity, adding new implementations or altering existing behavior becomes simpler.
+
+### Conclusion:
+Creating an interface for a service or repository before implementing them is a **best practice** in object-oriented design that enhances the flexibility, testability, and maintainability of the codebase. By adhering to these principles, you create systems that are more adaptable to change, easier to test, and scalable for future growth.
+
+## Step 3:
+    - Create in service package
+        - Interface -> IDepartmentService
+        - Class for Implentation -> DepartmentServiceImpl
+    - Create in repository package
+        - Interface -> IDepartmentRepository
+- We don't create a solid class for repo as the functions are directly given by JPA
+
+# Save Department API
+- **Note :** Find the explaination in the code itself (Comments) 
+- first we create a DepartmentControllr controller to give an endpoint 
+```java
+package com.LearnSpring.OneShot.controller;
+
+import com.LearnSpring.OneShot.entity.Department; // Importing the Department entity
+import com.LearnSpring.OneShot.service.IDepartmentService; // Importing the Department service interface
+import org.springframework.beans.factory.annotation.Autowired; // For dependency injection
+import org.springframework.web.bind.annotation.PostMapping; // Mapping HTTP POST requests
+import org.springframework.web.bind.annotation.RequestBody; // For handling request body
+import org.springframework.web.bind.annotation.RestController; // Marks this class as a REST controller
+
+/**
+ * This is the controller class for managing department-related operations.
+ * It handles incoming HTTP requests and forwards them to the service layer.
+ */
+@RestController
+public class DepartmentController {
+
+    // Service layer dependency to handle business logic for departments
+    private IDepartmentService departmentService;
+
+    /**
+     * Constructor-based dependency injection of the department service.
+     * This ensures that the controller has access to the service layer.
+     *
+     * @param departmentService The service interface for department-related operations.
+     */
+    @Autowired
+    public DepartmentController(IDepartmentService departmentService) {
+        this.departmentService = departmentService;
+    }
+
+    /**
+     * HTTP POST endpoint to save a department.
+     * This method accepts a department object from the request body and sends it to the service layer to be saved.
+     *
+     * @param department The department object received in the request body.
+     * @return The saved department object.
+     */
+    @PostMapping("/department")
+    public Department saveDepartment(@RequestBody Department department) {
+        // Calling the service layer to save the department and returning the saved department
+        return departmentService.saveDepartment(department);
+    }
+}
+
+```
+- From controller, we call in DepartmentService here we use the interface and solid class design [Important](#important-interface--class) 
+- Now modify the following service package classes as the following code
+  - IDepartmentService and DepartmentServiceImpl
+  
+```java
+    package com.LearnSpring.OneShot.service;
+
+    import com.LearnSpring.OneShot.entity.Department; // Importing the Department entity
+    
+    /**
+     * Interface for Department service operations.
+     * Defines the contract for department-related business logic.
+     */
+    public interface IDepartmentService {
+
+    /**
+     * Method to save a department.
+     * This method is implemented by the service class to handle department saving logic.
+     *
+     * @param department The department object to be saved.
+     * @return The saved department object.
+     */
+    public Department saveDepartment(Department department);
+}
+
+```
+```java
+package com.LearnSpring.OneShot.service;
+
+import com.LearnSpring.OneShot.entity.Department; // Importing the Department entity
+import com.LearnSpring.OneShot.repository.IDepartmentRepository; // Importing the Department repository interface
+import org.springframework.beans.factory.annotation.Autowired; // For dependency injection
+import org.springframework.stereotype.Service; // Marks this class as a service
+
+/**
+ * Implementation of the IDepartmentService interface.
+ * Provides the business logic for department-related operations.
+ */
+@Service
+public class DepartmentServiceImpl implements IDepartmentService {
+
+    // Repository dependency for interacting with the database
+    private IDepartmentRepository departmentRepository;
+
+    /**
+     * Constructor-based dependency injection of the department repository.
+     * This ensures that the service has access to the repository for data access.
+     *
+     * @param departmentRepository The repository interface for department-related data operations.
+     */
+    @Autowired
+    public DepartmentServiceImpl(IDepartmentRepository departmentRepository) {
+        this.departmentRepository = departmentRepository;
+    }
+
+    /**
+     * Implements the saveDepartment method from IDepartmentService.
+     * Uses the repository to save the department and return the saved entity.
+     *
+     * @param department The department object to be saved.
+     * @return The saved department object.
+     */
+    @Override
+    public Department saveDepartment(Department department) {
+        // Delegates the saving operation to the repository
+        return departmentRepository.save(department); // Uses JPA repository to persist the department
+    }
+}
+
+```
+- In the repository package modify the already created IDepartmentRepository as follows 
+```java
+package com.LearnSpring.OneShot.repository;
+
+import com.LearnSpring.OneShot.entity.Department; // Importing the Department entity
+import org.springframework.data.jpa.repository.JpaRepository; // Importing the JpaRepository interface from Spring Data JPA
+import org.springframework.stereotype.Repository; // Importing the Repository annotation
+
+/**
+ * Repository interface for Department entity.
+ * Extends JpaRepository to provide CRUD operations for the Department entity.
+ */
+@Repository
+public interface IDepartmentRepository extends JpaRepository<Department, Long> {
+    // No additional methods are defined here. JpaRepository provides basic CRUD operations out-of-the-box.
+}
+
+```
+
+- Now Run the project and test the api from any of API Clients 
+- This is the sample output from insomnia
+
+![Save Department API Testing](./ReadmeImg/OutputInsomina.png)
+
+
