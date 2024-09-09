@@ -1186,3 +1186,223 @@ public class MyController {
 5. **Logging**: Log exceptions and errors for better traceability and debugging.
 
 By following these practices, you ensure a smooth user experience and provide meaningful feedback to users when exceptions occur in your Spring Boot application.
+
+# Migrating from H2 in-memory DB to mySql DB
+To configure MySQL in `application.properties` for a Spring Boot application, you need to provide details such as the database URL, username, password, and driver class. Below are the essential configurations:
+
+### Example of `application.properties` for MySQL:
+```properties
+# Spring Datasource Properties
+spring.datasource.url=jdbc:mysql://localhost:3306/your_database_name
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# Hibernate Properties
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# Optional: Connection Pool Settings (for performance tuning)
+spring.datasource.hikari.connection-timeout=20000
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=300000
+spring.datasource.hikari.max-lifetime=1800000
+```
+
+### Configuration Breakdown:
+1. **`spring.datasource.url`**: This is the JDBC URL for your MySQL database. Replace `localhost:3306/your_database_name` with your database's host, port, and name. `useSSL=false` disables SSL, and `serverTimezone=UTC` ensures proper timezone handling.
+
+2. **`spring.datasource.username`**: The username for connecting to your MySQL database.
+
+3. **`spring.datasource.password`**: The password for the given username.
+
+4. **`spring.datasource.driver-class-name`**: The JDBC driver class for MySQL (`com.mysql.cj.jdbc.Driver` is for MySQL Connector/J version 8.x).
+
+5. **`spring.jpa.hibernate.ddl-auto=update`**: This option controls how Hibernate handles database schema updates. The most common options are:
+   - `update`: Updates the schema when necessary.
+   - `create`: Creates the schema, dropping it first if it exists.
+   - `create-drop`: Drops the schema when the session factory is closed.
+   - `validate`: Validates the schema, making no changes.
+
+6. **`spring.jpa.show-sql=true`**: Enables logging of SQL statements executed by Hibernate.
+
+7. **`spring.jpa.properties.hibernate.dialect`**: Specifies the Hibernate dialect for MySQL (adjust this based on your MySQL version, for example `MySQL8Dialect` for MySQL 8.x).
+
+### Optional HikariCP Configurations:
+Spring Boot uses HikariCP as the default connection pool, and the settings for the pool can be configured with the `spring.datasource.hikari.*` properties:
+- **`connection-timeout`**: Maximum time (in milliseconds) that a connection is allowed to sit idle in the pool.
+- **`maximum-pool-size`**: Maximum number of connections in the pool.
+- **`minimum-idle`**: Minimum number of idle connections that HikariCP maintains in the pool.
+- **`idle-timeout`**: Time (in milliseconds) before an idle connection is removed from the pool.
+- **`max-lifetime`**: Maximum lifetime of a connection in the pool.
+
+### Ensure You Have the MySQL Connector:
+To use MySQL in your Spring Boot project, you need to include the MySQL JDBC Driver dependency in your `pom.xml` for Maven:
+
+```xml
+<dependency>
+   <groupId>com.mysql</groupId>
+   <artifactId>mysql-connector-j</artifactId>
+</dependency>
+```
+
+This setup allows your Spring Boot application to connect to and interact with a MySQL database.
+
+### Now Go to mySql Workbench create a schema with the name you want, start application and you are done
+
+## Unit testing using JUnit and Mokito
+- They are added by Default
+  JUnit and Mockito are widely used for unit testing in Spring Boot applications. When writing unit tests, it's useful to follow the **AAA** methodology: **Arrange**, **Act**, and **Assert**.
+
+Here's how you can structure a unit test using JUnit and Mockito following the AAA methodology, along with explanations in comments.
+
+### Example: Unit Test for `DepartmentServiceImpl` using JUnit and Mockito
+
+```java
+package com.LearnSpring.OneShot.service;
+
+import com.LearnSpring.OneShot.entity.Department;
+import com.LearnSpring.OneShot.repository.IDepartmentRepository;
+import org.junit.jupiter.api.BeforeEach; // Import JUnit for setup methods
+import org.junit.jupiter.api.Test; // Import JUnit for unit test annotations
+import org.mockito.InjectMocks; // Import Mockito to inject mocks
+import org.mockito.Mock; // Import Mockito for mocking objects
+import org.mockito.Mockito; // Import Mockito to simulate behavior of dependencies
+import org.mockito.MockitoAnnotations; // For initializing mocks
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals; // Import for assertions
+import static org.mockito.Mockito.*;
+
+class DepartmentServiceImplTest {
+
+    // Mock the repository layer
+    @Mock
+    private IDepartmentRepository departmentRepository;
+
+    // Inject mocks into the service we are testing
+    @InjectMocks
+    private DepartmentServiceImpl departmentService;
+
+    private Department department;
+
+    /**
+     * Method to set up the initial environment before each test runs.
+     */
+    @BeforeEach
+    void setUp() {
+        // Initialize mock objects
+        MockitoAnnotations.openMocks(this);
+
+        // Arrange: Set up the mock department object
+        department = Department.builder()
+                .departmentName("IT")
+                .departmentAddress("Headquarters")
+                .departmentCode("IT-01")
+                .departmentId(1L)
+                .build();
+    }
+
+    /**
+     * Test the saveDepartment method in the service class.
+     */
+    @Test
+    void testSaveDepartment() {
+        // Arrange: Simulate the save method behavior
+        when(departmentRepository.save(department)).thenReturn(department);
+
+        // Act: Call the method to be tested
+        Department savedDepartment = departmentService.saveDepartment(department);
+
+        // Assert: Verify the expected outcome
+        assertEquals(department, savedDepartment);
+    }
+
+    /**
+     * Test the findDepartmentById method.
+     */
+    @Test
+    void testFindDepartmentById() {
+        // Arrange: Mock the repository's behavior for finding by ID
+        when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
+
+        // Act: Call the method to fetch the department by ID
+        Department foundDepartment = departmentService.findDepartmentById(1L);
+
+        // Assert: Check if the returned department matches the expected result
+        assertEquals(department.getDepartmentName(), foundDepartment.getDepartmentName());
+    }
+
+    /**
+     * Test the deleteDepartmentById method.
+     */
+    @Test
+    void testDeleteDepartmentById() {
+        // Act: Call the delete method
+        departmentService.deleteDepartmentById(1L);
+
+        // Assert: Verify that the deleteById method was called exactly once with the right ID
+        verify(departmentRepository, times(1)).deleteById(1L);
+    }
+}
+```
+
+### Breakdown of the Test Code:
+
+1. **Arrange**:
+   - We set up the necessary objects and mock behaviors using Mockito. In `setUp()`, we create a mock instance of `IDepartmentRepository` and a sample `Department` object to use in the tests.
+   - In the individual test cases, we use Mockito's `when()` method to specify the behavior of the repository, like returning a department when calling `findById()`.
+
+2. **Act**:
+   - We call the actual method we are testing, like `saveDepartment()`, `findDepartmentById()`, or `deleteDepartmentById()`.
+
+3. **Assert**:
+   - After calling the method, we verify if the results match our expectations. We use `assertEquals()` to compare the expected and actual results, and `verify()` to ensure that repository methods are being called the expected number of times.
+
+### Key Components:
+- **`@Mock`**: We use this to mock the `IDepartmentRepository` so that we can simulate its behavior without relying on the actual database.
+
+- **`@InjectMocks`**: This allows us to inject the mocked `IDepartmentRepository` into `DepartmentServiceImpl`, so we are testing the service layer without the real repository.
+
+- **`MockitoAnnotations.openMocks(this)`**: This initializes the mocks before each test method runs.
+
+- **`when(...).thenReturn(...)`**: This is used to mock the behavior of a repository method call. For example, when `findById()` is called, it returns the mocked department.
+
+- **`verify()`**: This is used to verify that specific repository methods were called the expected number of times, which is useful for ensuring side effects like deletion.
+
+### Sample Maven Dependency for JUnit and Mockito:
+Ensure that JUnit and Mockito are added to your `pom.xml` for Maven, though they are usually added by default in Spring Boot.
+
+```xml
+<dependencies>
+    <!-- JUnit 5 (Jupiter) -->
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>5.7.1</version>
+        <scope>test</scope>
+    </dependency>
+
+    <!-- Mockito for mocking dependencies -->
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>3.8.0</version>
+        <scope>test</scope>
+    </dependency>
+
+    <!-- Mockito JUnit 5 integration -->
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <version>3.8.0</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+### Conclusion:
+By following the **AAA (Arrange, Act, Assert)** methodology, your tests will be clean, well-structured, and easy to understand. This approach ensures that you're setting up the necessary data (Arrange), executing the method under test (Act), and verifying the results (Assert) in a consistent manner.
