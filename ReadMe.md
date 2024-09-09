@@ -527,4 +527,20 @@ public interface IDepartmentRepository extends JpaRepository<Department, Long> {
 
 ![Save Department API Testing](./ReadmeImg/OutputInsomina.png)
 
+## This way we will create all other APIs  
 
+### APIs Implemented :
+ **Note : for the following APIs kindly view the source code and follow the paths provided in this doc to know the flow** 
+
+#### Basic Crud
+- List All Departments 
+- Get Department By Id
+- Delete Department By Id
+- Update Department By Id
+
+#### Extra Endpoints
+**Note : For creating your own query methods in JPA Refer**
+[here](https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html)
+
+- Find By Department Name
+### Find the final version of the Department related classes and learn through comments
