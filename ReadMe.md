@@ -2203,7 +2203,8 @@ protected void configure(HttpSecurity http) throws Exception {
 
 Spring Boot Actuator is a powerful tool for monitoring, managing, and interacting with Spring Boot applications. By enabling various built-in endpoints, you can gain insight into the application's health, metrics, and runtime behavior. Additionally, custom endpoints give you the flexibility to expose your own operational data.
 
-Let me know if you'd like more examples or if you have any questions!
+### Well that was all basics, From here -> Spring Data JPA and then -> Spring Security
+# Thanks For Reading and Refering!  
 
 
 
