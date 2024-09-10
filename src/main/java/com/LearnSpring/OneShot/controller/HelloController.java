@@ -1,5 +1,6 @@
 package com.LearnSpring.OneShot.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,10 +15,12 @@ public class HelloController {
     // (i.e., the root path of the application) to this method.
     // When a GET request is made to this URL, the HelloWorld method is called.
 
+    @Value("${welcome.message}")
+    private String welcomeMessage;
     @GetMapping("/")
     public String HelloWorld() {
         // This method returns a simple string response: "First API".
         // The returned string will be sent as the response body of the GET request.
-        return "First API";
+        return "First API! " + welcomeMessage;
     }
 }
