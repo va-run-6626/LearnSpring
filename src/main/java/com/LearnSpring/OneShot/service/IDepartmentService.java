@@ -1,6 +1,7 @@
 package com.LearnSpring.OneShot.service;
 
 import com.LearnSpring.OneShot.entity.Department; // Importing the Department entity
+import com.LearnSpring.OneShot.error.DepartmentNotFoundException;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ public interface IDepartmentService {
      * @param id The ID of the department to be retrieved.
      * @return The department object with the specified ID.
      */
-    public Department findDepartmentById(Long id);
+    public Department findDepartmentById(Long id) throws DepartmentNotFoundException;
 
     /**
      * Method to delete a department by its ID.

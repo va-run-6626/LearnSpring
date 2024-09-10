@@ -1,12 +1,14 @@
 package com.LearnSpring.OneShot.service;
 
 import com.LearnSpring.OneShot.entity.Department; // Importing the Department entity
+import com.LearnSpring.OneShot.error.DepartmentNotFoundException;
 import com.LearnSpring.OneShot.repository.IDepartmentRepository; // Importing the Department repository interface
 import org.springframework.beans.factory.annotation.Autowired; // For dependency injection
 import org.springframework.stereotype.Service; // Marks this class as a service
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Implementation of the IDepartmentService interface.
@@ -62,9 +64,13 @@ public class DepartmentServiceImpl implements IDepartmentService {
      * @return The department object with the specified ID.
      */
     @Override
-    public Department findDepartmentById(Long id) {
+    public Department findDepartmentById(Long id) throws DepartmentNotFoundException {
         // Retrieves the department by ID from the repository
-        return departmentRepository.findById(id).orElse(null); // Returns null if not found
+        Optional<Department> department = departmentRepository.findById(id); // Returns null if not found
+        if(!department.isPresent()){
+            throw new DepartmentNotFoundException("Department Not Found");
+        }
+        return department.get();
     }
 
     /**

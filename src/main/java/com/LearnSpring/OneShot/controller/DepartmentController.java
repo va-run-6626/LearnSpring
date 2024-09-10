@@ -1,6 +1,7 @@
 package com.LearnSpring.OneShot.controller;
 
 import com.LearnSpring.OneShot.entity.Department; // Importing the Department entity
+import com.LearnSpring.OneShot.error.DepartmentNotFoundException;
 import com.LearnSpring.OneShot.service.IDepartmentService; // Importing the Department service interface
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public class DepartmentController {
      * @return The department object with the specified ID.
      */
     @GetMapping("/departments/{id}")
-    public Department findDepartmentById(@PathVariable("id") Long id) {
+    public Department findDepartmentById(@PathVariable("id") Long id) throws DepartmentNotFoundException {
         // Calling the service layer to retrieve the department by ID and returning it
         return departmentService.findDepartmentById(id);
     }

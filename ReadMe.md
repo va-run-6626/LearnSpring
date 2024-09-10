@@ -1013,3 +1013,722 @@ These steps should help you effectively add and configure logging in your Spring
 ### We have implemented simple logging in the application this is for extra info 
 
 ## Exception handling in Spring Boot 
+In Spring Boot, **exception handling** can be managed using a variety of approaches that allow you to control how exceptions are handled at different layers of an application. Proper exception handling makes your application robust and user-friendly by providing meaningful responses when something goes wrong.
+
+### 1. **Global Exception Handling Using `@ControllerAdvice`**
+The `@ControllerAdvice` annotation is used to handle exceptions globally, meaning it can catch exceptions thrown across the entire application, across different controllers.
+
+#### Example:
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Handle specific exception
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(ex.getMessage(), request.getDescription(false));
+        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+    }
+
+    // Handle global exception
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request) {
+        ErrorDetails errorDetails = new ErrorDetails(ex.getMessage(), request.getDescription(false));
+        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+```
+
+Here:
+- `@ControllerAdvice`: Marks the class as a global exception handler.
+- `@ExceptionHandler`: Defines the method as the handler for specific exceptions. It returns a custom `ErrorDetails` object and HTTP status code.
+
+### 2. **Custom Exception Classes**
+Creating custom exception classes allows you to define exceptions that are specific to your application’s domain or logic.
+
+#### Example of a Custom Exception:
+```java
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+```
+
+#### Error Details Class:
+```java
+public class ErrorDetails {
+    private String message;
+    private String details;
+
+    public ErrorDetails(String message, String details) {
+        this.message = message;
+        this.details = details;
+    }
+
+    // Getters and Setters
+}
+```
+
+### 3. **Exception Handling with `@ResponseStatus`**
+You can annotate custom exception classes with `@ResponseStatus` to set a specific HTTP status when the exception is thrown.
+
+#### Example:
+```java
+@ResponseStatus(value = HttpStatus.NOT_FOUND)
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+```
+- In this case, when the `ResourceNotFoundException` is thrown, it will automatically return a `404 NOT FOUND` response.
+
+### 4. **Handling Validation Errors (Method Argument Not Valid)**
+When using validation (such as Hibernate Validator) in Spring Boot, you may need to handle validation errors.
+
+#### Example:
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Handle validation errors
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return errors;
+    }
+}
+```
+This will return a `400 Bad Request` when a validation error occurs, along with a map containing the field and error message.
+
+### 5. **`@ResponseEntityExceptionHandler`**
+Spring provides `ResponseEntityExceptionHandler`, which offers centralized exception handling across all `@RequestMapping` methods. You can override methods from this class for specific exceptions.
+
+#### Example:
+```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+@ControllerAdvice
+public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+                                                                  HttpHeaders headers,
+                                                                  HttpStatus status,
+                                                                  WebRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+            errors.put(error.getField(), error.getDefaultMessage()));
+        
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+}
+```
+
+### 6. **Using `@ExceptionHandler` in Controllers**
+You can also handle exceptions locally within a specific controller using `@ExceptionHandler`.
+
+#### Example:
+```java
+@RestController
+@RequestMapping("/api")
+public class MyController {
+
+    @GetMapping("/resource/{id}")
+    public ResponseEntity<?> getResource(@PathVariable("id") Long id) {
+        if (id == null) {
+            throw new ResourceNotFoundException("Resource not found for ID: " + id);
+        }
+        return ResponseEntity.ok("Resource found");
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        ErrorDetails errorDetails = new ErrorDetails(ex.getMessage(), "Resource not found");
+        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+    }
+}
+```
+
+### Best Practices for Exception Handling in Spring Boot
+1. **Use Specific Exceptions**: Create custom exceptions for specific error scenarios.
+2. **Global Exception Handling**: Use `@ControllerAdvice` for consistent global exception handling.
+3. **Custom Error Responses**: Define custom error response classes for meaningful error information.
+4. **HTTP Status Codes**: Ensure appropriate status codes are returned for various exceptions.
+5. **Logging**: Log exceptions and errors for better traceability and debugging.
+
+By following these practices, you ensure a smooth user experience and provide meaningful feedback to users when exceptions occur in your Spring Boot application.
+
+# Migrating from H2 in-memory DB to mySql DB
+To configure MySQL in `application.properties` for a Spring Boot application, you need to provide details such as the database URL, username, password, and driver class. Below are the essential configurations:
+
+### Example of `application.properties` for MySQL:
+```properties
+# Spring Datasource Properties
+spring.datasource.url=jdbc:mysql://localhost:3306/your_database_name
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# Hibernate Properties
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# Optional: Connection Pool Settings (for performance tuning)
+spring.datasource.hikari.connection-timeout=20000
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=300000
+spring.datasource.hikari.max-lifetime=1800000
+```
+
+### Configuration Breakdown:
+1. **`spring.datasource.url`**: This is the JDBC URL for your MySQL database. Replace `localhost:3306/your_database_name` with your database's host, port, and name. `useSSL=false` disables SSL, and `serverTimezone=UTC` ensures proper timezone handling.
+
+2. **`spring.datasource.username`**: The username for connecting to your MySQL database.
+
+3. **`spring.datasource.password`**: The password for the given username.
+
+4. **`spring.datasource.driver-class-name`**: The JDBC driver class for MySQL (`com.mysql.cj.jdbc.Driver` is for MySQL Connector/J version 8.x).
+
+5. **`spring.jpa.hibernate.ddl-auto=update`**: This option controls how Hibernate handles database schema updates. The most common options are:
+   - `update`: Updates the schema when necessary.
+   - `create`: Creates the schema, dropping it first if it exists.
+   - `create-drop`: Drops the schema when the session factory is closed.
+   - `validate`: Validates the schema, making no changes.
+
+6. **`spring.jpa.show-sql=true`**: Enables logging of SQL statements executed by Hibernate.
+
+7. **`spring.jpa.properties.hibernate.dialect`**: Specifies the Hibernate dialect for MySQL (adjust this based on your MySQL version, for example `MySQL8Dialect` for MySQL 8.x).
+
+### Optional HikariCP Configurations:
+Spring Boot uses HikariCP as the default connection pool, and the settings for the pool can be configured with the `spring.datasource.hikari.*` properties:
+- **`connection-timeout`**: Maximum time (in milliseconds) that a connection is allowed to sit idle in the pool.
+- **`maximum-pool-size`**: Maximum number of connections in the pool.
+- **`minimum-idle`**: Minimum number of idle connections that HikariCP maintains in the pool.
+- **`idle-timeout`**: Time (in milliseconds) before an idle connection is removed from the pool.
+- **`max-lifetime`**: Maximum lifetime of a connection in the pool.
+
+### Ensure You Have the MySQL Connector:
+To use MySQL in your Spring Boot project, you need to include the MySQL JDBC Driver dependency in your `pom.xml` for Maven:
+
+```xml
+<dependency>
+   <groupId>com.mysql</groupId>
+   <artifactId>mysql-connector-j</artifactId>
+</dependency>
+```
+
+This setup allows your Spring Boot application to connect to and interact with a MySQL database.
+
+### Now Go to mySql Workbench create a schema with the name you want, start application and you are done
+
+## Unit testing using JUnit and Mokito
+- They are added by Default
+  JUnit and Mockito are widely used for unit testing in Spring Boot applications. When writing unit tests, it's useful to follow the **AAA** methodology: **Arrange**, **Act**, and **Assert**.
+
+Here's how you can structure a unit test using JUnit and Mockito following the AAA methodology, along with explanations in comments.
+
+### Example: Unit Test for `DepartmentServiceImpl` using JUnit and Mockito
+
+```java
+package com.LearnSpring.OneShot.service;
+
+import com.LearnSpring.OneShot.entity.Department;
+import com.LearnSpring.OneShot.repository.IDepartmentRepository;
+import org.junit.jupiter.api.BeforeEach; // Import JUnit for setup methods
+import org.junit.jupiter.api.Test; // Import JUnit for unit test annotations
+import org.mockito.InjectMocks; // Import Mockito to inject mocks
+import org.mockito.Mock; // Import Mockito for mocking objects
+import org.mockito.Mockito; // Import Mockito to simulate behavior of dependencies
+import org.mockito.MockitoAnnotations; // For initializing mocks
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals; // Import for assertions
+import static org.mockito.Mockito.*;
+
+class DepartmentServiceImplTest {
+
+    // Mock the repository layer
+    @Mock
+    private IDepartmentRepository departmentRepository;
+
+    // Inject mocks into the service we are testing
+    @InjectMocks
+    private DepartmentServiceImpl departmentService;
+
+    private Department department;
+
+    /**
+     * Method to set up the initial environment before each test runs.
+     */
+    @BeforeEach
+    void setUp() {
+        // Initialize mock objects
+        MockitoAnnotations.openMocks(this);
+
+        // Arrange: Set up the mock department object
+        department = Department.builder()
+                .departmentName("IT")
+                .departmentAddress("Headquarters")
+                .departmentCode("IT-01")
+                .departmentId(1L)
+                .build();
+    }
+
+    /**
+     * Test the saveDepartment method in the service class.
+     */
+    @Test
+    void testSaveDepartment() {
+        // Arrange: Simulate the save method behavior
+        when(departmentRepository.save(department)).thenReturn(department);
+
+        // Act: Call the method to be tested
+        Department savedDepartment = departmentService.saveDepartment(department);
+
+        // Assert: Verify the expected outcome
+        assertEquals(department, savedDepartment);
+    }
+
+    /**
+     * Test the findDepartmentById method.
+     */
+    @Test
+    void testFindDepartmentById() {
+        // Arrange: Mock the repository's behavior for finding by ID
+        when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
+
+        // Act: Call the method to fetch the department by ID
+        Department foundDepartment = departmentService.findDepartmentById(1L);
+
+        // Assert: Check if the returned department matches the expected result
+        assertEquals(department.getDepartmentName(), foundDepartment.getDepartmentName());
+    }
+
+    /**
+     * Test the deleteDepartmentById method.
+     */
+    @Test
+    void testDeleteDepartmentById() {
+        // Act: Call the delete method
+        departmentService.deleteDepartmentById(1L);
+
+        // Assert: Verify that the deleteById method was called exactly once with the right ID
+        verify(departmentRepository, times(1)).deleteById(1L);
+    }
+}
+```
+
+### Breakdown of the Test Code:
+
+1. **Arrange**:
+   - We set up the necessary objects and mock behaviors using Mockito. In `setUp()`, we create a mock instance of `IDepartmentRepository` and a sample `Department` object to use in the tests.
+   - In the individual test cases, we use Mockito's `when()` method to specify the behavior of the repository, like returning a department when calling `findById()`.
+
+2. **Act**:
+   - We call the actual method we are testing, like `saveDepartment()`, `findDepartmentById()`, or `deleteDepartmentById()`.
+
+3. **Assert**:
+   - After calling the method, we verify if the results match our expectations. We use `assertEquals()` to compare the expected and actual results, and `verify()` to ensure that repository methods are being called the expected number of times.
+
+### Key Components:
+- **`@Mock`**: We use this to mock the `IDepartmentRepository` so that we can simulate its behavior without relying on the actual database.
+
+- **`@InjectMocks`**: This allows us to inject the mocked `IDepartmentRepository` into `DepartmentServiceImpl`, so we are testing the service layer without the real repository.
+
+- **`MockitoAnnotations.openMocks(this)`**: This initializes the mocks before each test method runs.
+
+- **`when(...).thenReturn(...)`**: This is used to mock the behavior of a repository method call. For example, when `findById()` is called, it returns the mocked department.
+
+- **`verify()`**: This is used to verify that specific repository methods were called the expected number of times, which is useful for ensuring side effects like deletion.
+
+### Sample Maven Dependency for JUnit and Mockito:
+Ensure that JUnit and Mockito are added to your `pom.xml` for Maven, though they are usually added by default in Spring Boot.
+
+```xml
+<dependencies>
+    <!-- JUnit 5 (Jupiter) -->
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>5.7.1</version>
+        <scope>test</scope>
+    </dependency>
+
+    <!-- Mockito for mocking dependencies -->
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>3.8.0</version>
+        <scope>test</scope>
+    </dependency>
+
+    <!-- Mockito JUnit 5 integration -->
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <version>3.8.0</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+### Conclusion:
+By following the **AAA (Arrange, Act, Assert)** methodology, your tests will be clean, well-structured, and easy to understand. This approach ensures that you're setting up the necessary data (Arrange), executing the method under test (Act), and verifying the results (Assert) in a consistent manner.
+
+## Testing Repository layer in Spring boot 
+Testing the **repository layer** in Spring Boot involves validating the data access layer of your application. In Spring Boot, the repository layer typically interacts with a database using JPA (Java Persistence API) repositories, often implemented with Spring Data JPA. Testing this layer ensures that your queries and persistence operations (such as saving, deleting, and retrieving entities) work as expected.
+
+### Types of Tests for the Repository Layer
+
+1. **Unit Testing**: This tests the repository layer in isolation, usually using mocking frameworks like Mockito to avoid hitting a real database.
+
+2. **Integration Testing**: This involves running the tests with an actual database (commonly an in-memory database like H2) to verify the repository behavior in a real-world scenario.
+
+Let’s dive into both types.
+
+---
+
+## 1. Unit Testing the Repository Layer
+
+Unit tests focus on testing repository methods independently without requiring an actual database. Mockito is commonly used for mocking the behavior of dependencies like the repository.
+
+### Example: Unit Testing a Repository Using Mockito
+
+```java
+import com.LearnSpring.OneShot.entity.Department;
+import com.LearnSpring.OneShot.repository.IDepartmentRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+class DepartmentRepositoryTest {
+
+    @Mock
+    private IDepartmentRepository departmentRepository; // Mocking the repository
+
+    private Department department;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this); // Initialize mocks
+
+        // Creating a dummy department object
+        department = Department.builder()
+                .departmentId(1L)
+                .departmentName("HR")
+                .departmentCode("HR-01")
+                .departmentAddress("New York")
+                .build();
+
+        // Mocking the save method of the repository
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+    }
+
+    @Test
+    void testSaveDepartment() {
+        Department savedDepartment = departmentRepository.save(department); // Simulating saving to the repository
+        assertEquals(department.getDepartmentName(), savedDepartment.getDepartmentName()); // Assertion to verify the saved data
+    }
+}
+```
+
+### Explanation:
+- **Mockito** is used to mock the `IDepartmentRepository` so that it behaves as though it's interacting with a real database, but without actually doing so.
+- We create a sample `Department` object in `setUp()`.
+- In the `testSaveDepartment()` method, we call the `save()` method on the mocked repository and assert that the saved department matches the expected one.
+
+---
+
+## 2. Integration Testing the Repository Layer
+
+Integration tests require an actual database to ensure the repository methods behave correctly. Spring Boot provides support for **in-memory databases** like H2, which are useful for testing because they reset after each test.
+
+### Configuring the Test with H2
+
+Spring Boot automatically configures an H2 in-memory database for your tests if you include the H2 dependency in your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>test</scope>
+</dependency>
+```
+
+### Example: Integration Testing with H2
+
+```java
+import com.LearnSpring.OneShot.entity.Department;
+import com.LearnSpring.OneShot.repository.IDepartmentRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@DataJpaTest // Enables JPA tests with an embedded database like H2
+class DepartmentRepositoryIntegrationTest {
+
+    @Autowired
+    private IDepartmentRepository departmentRepository; // Inject the repository to test
+
+    private Department department;
+
+    @BeforeEach
+    void setUp() {
+        // Create a sample department to test repository operations
+        department = Department.builder()
+                .departmentName("Finance")
+                .departmentCode("FIN-02")
+                .departmentAddress("Los Angeles")
+                .build();
+    }
+
+    @Test
+    @DisplayName("Test Saving Department")
+    public void testSaveDepartment() {
+        // Saving a department entity
+        Department savedDepartment = departmentRepository.save(department);
+        
+        // Assertion to ensure the department was saved correctly
+        assertEquals(department.getDepartmentName(), savedDepartment.getDepartmentName());
+    }
+
+    @Test
+    @DisplayName("Test Finding Department by ID")
+    public void testFindById() {
+        // Saving a department and then retrieving it by its ID
+        Department savedDepartment = departmentRepository.save(department);
+        Optional<Department> retrievedDepartment = departmentRepository.findById(savedDepartment.getDepartmentId());
+
+        // Assertion to check if department was retrieved successfully
+        assertTrue(retrievedDepartment.isPresent());
+        assertEquals(department.getDepartmentName(), retrievedDepartment.get().getDepartmentName());
+    }
+}
+```
+
+### Explanation:
+- **@DataJpaTest**: This annotation is crucial for testing JPA repositories. It enables an in-memory H2 database and provides repository testing features.
+- The test database (H2) is automatically set up, and you can use `departmentRepository` as you would with a real database.
+- The tests, such as `testSaveDepartment()` and `testFindById()`, perform operations like saving and retrieving data, and then assert their correctness.
+
+---
+
+### Important Annotations in Repository Testing:
+
+- **@DataJpaTest**: Used for testing JPA repositories. It configures an embedded H2 database and disables the full Spring context, keeping the focus on repository testing.
+- **@MockBean**: Used to mock beans like repositories during testing.
+- **@Autowired**: Injects the beans you are testing, like your repository or service.
+- **@BeforeEach**: Prepares data before each test case is executed.
+- **@Test**: Marks a method as a test case in JUnit.
+- **@DisplayName**: Allows you to give a human-readable name to the test method.
+
+---
+
+### Arrange, Act, Assert (AAA) in Testing
+
+This is a standard methodology for structuring unit tests:
+
+1. **Arrange**: Set up the test by preparing data or mocking dependencies.
+2. **Act**: Perform the action you want to test.
+3. **Assert**: Verify that the action produced the expected result.
+
+For example:
+
+```java
+@Test
+@DisplayName("Test Finding Department by Name")
+public void testFindByName() {
+    // Arrange: Setting up the expected data
+    String departmentName = "Finance";
+    Department savedDepartment = departmentRepository.save(department);
+
+    // Act: Retrieving department by name
+    Department foundDepartment = departmentRepository.findByDepartmentName(departmentName);
+
+    // Assert: Checking if the found department matches the expected one
+    assertEquals(departmentName, foundDepartment.getDepartmentName());
+}
+```
+
+### Conclusion
+
+- **Unit testing** involves testing the repository in isolation using mocking frameworks like Mockito.
+- **Integration testing** tests the repository's interaction with an actual database, often using in-memory databases like H2.
+- Both types of tests are important for ensuring the correctness and reliability of your repository methods.
+
+
+
+## Controller Testing
+
+Controller testing ensures that your REST API endpoints are functioning correctly. This is typically done using the `MockMvc` framework, which allows you to simulate HTTP requests and responses. In your test class, you're using `WebMvcTest` to test the `DepartmentController` class. This approach helps isolate the controller layer and mock the service layer dependencies.
+
+### Updated Code with Comments
+
+```java
+package com.LearnSpring.OneShot.controller;
+
+import com.LearnSpring.OneShot.entity.Department;
+import com.LearnSpring.OneShot.error.DepartmentNotFoundException;
+import com.LearnSpring.OneShot.service.IDepartmentService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.http.MediaType.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * Test class for DepartmentController.
+ * This class uses Spring Boot's WebMvcTest to test controller methods.
+ */
+@WebMvcTest(DepartmentController.class)
+class DepartmentControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;  // MockMvc instance to perform HTTP requests and assert responses
+
+    @MockBean
+    private IDepartmentService departmentService;  // Mock the IDepartmentService to isolate the controller tests
+
+    private Department department;  // Department instance for test scenarios
+
+    /**
+     * Sets up the test environment before each test method.
+     * This method initializes a sample Department entity to be used in tests.
+     */
+    @BeforeEach
+    void setUp() {
+        // Initialize a Department instance with sample data
+        department = Department.builder()
+                .departmentAddress("Hyderabad")
+                .departmentCode("IT-06")
+                .departmentName("IT")
+                .departmentId(1L)
+                .build();
+    }
+
+    /**
+     * Tests the saveDepartment method of the DepartmentController.
+     * This method tests the POST request to save a department.
+     */
+    @Test
+    void saveDepartment() throws Exception {
+        // Create a Department instance with input data for the test
+        Department inpDept = Department.builder()
+                .departmentAddress("Hyderabad")
+                .departmentCode("IT-06")
+                .departmentName("IT")
+                .build();
+
+        // Mock the departmentService's saveDepartment method to return the predefined department instance
+        Mockito.when(departmentService.saveDepartment(inpDept)).thenReturn(department);
+
+        /*
+         * Original method of performing POST request using MockMvc
+         * The request is sent to "/departments" with JSON content and the expected status is 200 OK.
+         */
+        mockMvc.perform(MockMvcRequestBuilders.post("/departments")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\n" +
+                        "\t\"departmentName\":\"IT\",\n" +
+                        "\t\"departmentAddress\":\"Hyderabad\",\n" +
+                        "\t\"departmentCode\":\"IT-06\"\n" +
+                        "}"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        /*
+         * Refactored method with on-demand static input for simplicity
+         * The request is sent to "/departments" with JSON content and the expected status is 200 OK.
+         */
+        mockMvc.perform(post("/departments")
+                .contentType(APPLICATION_JSON)
+                .content("{\n" +
+                        "\t\"departmentName\":\"IT\",\n" +
+                        "\t\"departmentAddress\":\"Hyderabad\",\n" +
+                        "\t\"departmentCode\":\"IT-06\"\n" +
+                        "}"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Tests the findDepartmentById method of the DepartmentController.
+     * This method tests the GET request to retrieve a department by its ID.
+     */
+    @Test
+    void findDepartmentById() throws Exception {
+        // Mock the departmentService's findDepartmentById method to return the predefined department instance
+        Mockito.when(departmentService.findDepartmentById(1L)).thenReturn(department);
+
+        // Perform GET request to "/departments/1" and expect the response status to be 200 OK
+        // Also, verify that the department name in the response matches the expected value
+        mockMvc.perform(get("/departments/1")
+                .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.departmentName").value(department.getDepartmentName()));
+    }
+}
+```
+
+### Explanation of Comments:
+
+- **Class-level Comment**: Provides an overview of what is being tested and the testing framework used.
+- **Field-level Comments**: Explain the purpose of each injected field, including `MockMvc` and the mocked `IDepartmentService`.
+- **Method-level Comments**: Describe what each method is testing, including the setup of test data and the expected behavior of the HTTP requests.
+- **Inline Comments**: Offer explanations for specific lines of code, especially where mocking and request/response assertions are involved.
+
+These comments will help clarify the purpose and functionality of each part of your test class, making it easier for others (or future you) to understand and maintain the tests.
