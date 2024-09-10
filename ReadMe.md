@@ -1406,3 +1406,329 @@ Ensure that JUnit and Mockito are added to your `pom.xml` for Maven, though they
 
 ### Conclusion:
 By following the **AAA (Arrange, Act, Assert)** methodology, your tests will be clean, well-structured, and easy to understand. This approach ensures that you're setting up the necessary data (Arrange), executing the method under test (Act), and verifying the results (Assert) in a consistent manner.
+
+## Testing Repository layer in Spring boot 
+Testing the **repository layer** in Spring Boot involves validating the data access layer of your application. In Spring Boot, the repository layer typically interacts with a database using JPA (Java Persistence API) repositories, often implemented with Spring Data JPA. Testing this layer ensures that your queries and persistence operations (such as saving, deleting, and retrieving entities) work as expected.
+
+### Types of Tests for the Repository Layer
+
+1. **Unit Testing**: This tests the repository layer in isolation, usually using mocking frameworks like Mockito to avoid hitting a real database.
+
+2. **Integration Testing**: This involves running the tests with an actual database (commonly an in-memory database like H2) to verify the repository behavior in a real-world scenario.
+
+Let’s dive into both types.
+
+---
+
+## 1. Unit Testing the Repository Layer
+
+Unit tests focus on testing repository methods independently without requiring an actual database. Mockito is commonly used for mocking the behavior of dependencies like the repository.
+
+### Example: Unit Testing a Repository Using Mockito
+
+```java
+import com.LearnSpring.OneShot.entity.Department;
+import com.LearnSpring.OneShot.repository.IDepartmentRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+class DepartmentRepositoryTest {
+
+    @Mock
+    private IDepartmentRepository departmentRepository; // Mocking the repository
+
+    private Department department;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this); // Initialize mocks
+
+        // Creating a dummy department object
+        department = Department.builder()
+                .departmentId(1L)
+                .departmentName("HR")
+                .departmentCode("HR-01")
+                .departmentAddress("New York")
+                .build();
+
+        // Mocking the save method of the repository
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+    }
+
+    @Test
+    void testSaveDepartment() {
+        Department savedDepartment = departmentRepository.save(department); // Simulating saving to the repository
+        assertEquals(department.getDepartmentName(), savedDepartment.getDepartmentName()); // Assertion to verify the saved data
+    }
+}
+```
+
+### Explanation:
+- **Mockito** is used to mock the `IDepartmentRepository` so that it behaves as though it's interacting with a real database, but without actually doing so.
+- We create a sample `Department` object in `setUp()`.
+- In the `testSaveDepartment()` method, we call the `save()` method on the mocked repository and assert that the saved department matches the expected one.
+
+---
+
+## 2. Integration Testing the Repository Layer
+
+Integration tests require an actual database to ensure the repository methods behave correctly. Spring Boot provides support for **in-memory databases** like H2, which are useful for testing because they reset after each test.
+
+### Configuring the Test with H2
+
+Spring Boot automatically configures an H2 in-memory database for your tests if you include the H2 dependency in your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>test</scope>
+</dependency>
+```
+
+### Example: Integration Testing with H2
+
+```java
+import com.LearnSpring.OneShot.entity.Department;
+import com.LearnSpring.OneShot.repository.IDepartmentRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@DataJpaTest // Enables JPA tests with an embedded database like H2
+class DepartmentRepositoryIntegrationTest {
+
+    @Autowired
+    private IDepartmentRepository departmentRepository; // Inject the repository to test
+
+    private Department department;
+
+    @BeforeEach
+    void setUp() {
+        // Create a sample department to test repository operations
+        department = Department.builder()
+                .departmentName("Finance")
+                .departmentCode("FIN-02")
+                .departmentAddress("Los Angeles")
+                .build();
+    }
+
+    @Test
+    @DisplayName("Test Saving Department")
+    public void testSaveDepartment() {
+        // Saving a department entity
+        Department savedDepartment = departmentRepository.save(department);
+        
+        // Assertion to ensure the department was saved correctly
+        assertEquals(department.getDepartmentName(), savedDepartment.getDepartmentName());
+    }
+
+    @Test
+    @DisplayName("Test Finding Department by ID")
+    public void testFindById() {
+        // Saving a department and then retrieving it by its ID
+        Department savedDepartment = departmentRepository.save(department);
+        Optional<Department> retrievedDepartment = departmentRepository.findById(savedDepartment.getDepartmentId());
+
+        // Assertion to check if department was retrieved successfully
+        assertTrue(retrievedDepartment.isPresent());
+        assertEquals(department.getDepartmentName(), retrievedDepartment.get().getDepartmentName());
+    }
+}
+```
+
+### Explanation:
+- **@DataJpaTest**: This annotation is crucial for testing JPA repositories. It enables an in-memory H2 database and provides repository testing features.
+- The test database (H2) is automatically set up, and you can use `departmentRepository` as you would with a real database.
+- The tests, such as `testSaveDepartment()` and `testFindById()`, perform operations like saving and retrieving data, and then assert their correctness.
+
+---
+
+### Important Annotations in Repository Testing:
+
+- **@DataJpaTest**: Used for testing JPA repositories. It configures an embedded H2 database and disables the full Spring context, keeping the focus on repository testing.
+- **@MockBean**: Used to mock beans like repositories during testing.
+- **@Autowired**: Injects the beans you are testing, like your repository or service.
+- **@BeforeEach**: Prepares data before each test case is executed.
+- **@Test**: Marks a method as a test case in JUnit.
+- **@DisplayName**: Allows you to give a human-readable name to the test method.
+
+---
+
+### Arrange, Act, Assert (AAA) in Testing
+
+This is a standard methodology for structuring unit tests:
+
+1. **Arrange**: Set up the test by preparing data or mocking dependencies.
+2. **Act**: Perform the action you want to test.
+3. **Assert**: Verify that the action produced the expected result.
+
+For example:
+
+```java
+@Test
+@DisplayName("Test Finding Department by Name")
+public void testFindByName() {
+    // Arrange: Setting up the expected data
+    String departmentName = "Finance";
+    Department savedDepartment = departmentRepository.save(department);
+
+    // Act: Retrieving department by name
+    Department foundDepartment = departmentRepository.findByDepartmentName(departmentName);
+
+    // Assert: Checking if the found department matches the expected one
+    assertEquals(departmentName, foundDepartment.getDepartmentName());
+}
+```
+
+### Conclusion
+
+- **Unit testing** involves testing the repository in isolation using mocking frameworks like Mockito.
+- **Integration testing** tests the repository's interaction with an actual database, often using in-memory databases like H2.
+- Both types of tests are important for ensuring the correctness and reliability of your repository methods.
+
+
+
+## Controller Testing
+
+Controller testing ensures that your REST API endpoints are functioning correctly. This is typically done using the `MockMvc` framework, which allows you to simulate HTTP requests and responses. In your test class, you're using `WebMvcTest` to test the `DepartmentController` class. This approach helps isolate the controller layer and mock the service layer dependencies.
+
+### Updated Code with Comments
+
+```java
+package com.LearnSpring.OneShot.controller;
+
+import com.LearnSpring.OneShot.entity.Department;
+import com.LearnSpring.OneShot.error.DepartmentNotFoundException;
+import com.LearnSpring.OneShot.service.IDepartmentService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.http.MediaType.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * Test class for DepartmentController.
+ * This class uses Spring Boot's WebMvcTest to test controller methods.
+ */
+@WebMvcTest(DepartmentController.class)
+class DepartmentControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;  // MockMvc instance to perform HTTP requests and assert responses
+
+    @MockBean
+    private IDepartmentService departmentService;  // Mock the IDepartmentService to isolate the controller tests
+
+    private Department department;  // Department instance for test scenarios
+
+    /**
+     * Sets up the test environment before each test method.
+     * This method initializes a sample Department entity to be used in tests.
+     */
+    @BeforeEach
+    void setUp() {
+        // Initialize a Department instance with sample data
+        department = Department.builder()
+                .departmentAddress("Hyderabad")
+                .departmentCode("IT-06")
+                .departmentName("IT")
+                .departmentId(1L)
+                .build();
+    }
+
+    /**
+     * Tests the saveDepartment method of the DepartmentController.
+     * This method tests the POST request to save a department.
+     */
+    @Test
+    void saveDepartment() throws Exception {
+        // Create a Department instance with input data for the test
+        Department inpDept = Department.builder()
+                .departmentAddress("Hyderabad")
+                .departmentCode("IT-06")
+                .departmentName("IT")
+                .build();
+
+        // Mock the departmentService's saveDepartment method to return the predefined department instance
+        Mockito.when(departmentService.saveDepartment(inpDept)).thenReturn(department);
+
+        /*
+         * Original method of performing POST request using MockMvc
+         * The request is sent to "/departments" with JSON content and the expected status is 200 OK.
+         */
+        mockMvc.perform(MockMvcRequestBuilders.post("/departments")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\n" +
+                        "\t\"departmentName\":\"IT\",\n" +
+                        "\t\"departmentAddress\":\"Hyderabad\",\n" +
+                        "\t\"departmentCode\":\"IT-06\"\n" +
+                        "}"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        /*
+         * Refactored method with on-demand static input for simplicity
+         * The request is sent to "/departments" with JSON content and the expected status is 200 OK.
+         */
+        mockMvc.perform(post("/departments")
+                .contentType(APPLICATION_JSON)
+                .content("{\n" +
+                        "\t\"departmentName\":\"IT\",\n" +
+                        "\t\"departmentAddress\":\"Hyderabad\",\n" +
+                        "\t\"departmentCode\":\"IT-06\"\n" +
+                        "}"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Tests the findDepartmentById method of the DepartmentController.
+     * This method tests the GET request to retrieve a department by its ID.
+     */
+    @Test
+    void findDepartmentById() throws Exception {
+        // Mock the departmentService's findDepartmentById method to return the predefined department instance
+        Mockito.when(departmentService.findDepartmentById(1L)).thenReturn(department);
+
+        // Perform GET request to "/departments/1" and expect the response status to be 200 OK
+        // Also, verify that the department name in the response matches the expected value
+        mockMvc.perform(get("/departments/1")
+                .contentType(APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.departmentName").value(department.getDepartmentName()));
+    }
+}
+```
+
+### Explanation of Comments:
+
+- **Class-level Comment**: Provides an overview of what is being tested and the testing framework used.
+- **Field-level Comments**: Explain the purpose of each injected field, including `MockMvc` and the mocked `IDepartmentService`.
+- **Method-level Comments**: Describe what each method is testing, including the setup of test data and the expected behavior of the HTTP requests.
+- **Inline Comments**: Offer explanations for specific lines of code, especially where mocking and request/response assertions are involved.
+
+These comments will help clarify the purpose and functionality of each part of your test class, making it easier for others (or future you) to understand and maintain the tests.
