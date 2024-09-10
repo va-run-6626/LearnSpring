@@ -1732,3 +1732,478 @@ class DepartmentControllerTest {
 - **Inline Comments**: Offer explanations for specific lines of code, especially where mocking and request/response assertions are involved.
 
 These comments will help clarify the purpose and functionality of each part of your test class, making it easier for others (or future you) to understand and maintain the tests.
+
+## Adding configurations in applications.properties and using them in the development
+adding configurations in `application.properties` and using them in development:
+
+**What is `application.properties`?**
+
+- A common configuration file used in various frameworks like Spring Boot for storing application-specific settings.
+- Key-value pairs define these settings, making it easy to manage and modify them without changing code.
+
+**Adding Configurations:**
+
+1. **Location:**
+   - Typically placed in the `src/main/resources` directory of your project structure.
+
+2. **Syntax:**
+   - Each line defines a configuration with a key (property name) and a value (the setting).
+   - Keys are case-sensitive.
+   - Values can be simple strings, numbers, booleans, or lists separated by commas.
+
+   ```properties
+   # Example properties
+   server.port=8080  # Set server port
+   app.name=My Awesome App  # Application name
+   database.url=jdbc:mysql://localhost:3306/mydatabase  # Database connection URL
+   feature.enabled=true  # Enable a feature
+   api.endpoints=users,products  # List of API endpoints (comma-separated)
+   ```
+
+**Using Configurations in Development:**
+
+1. **Accessing Properties:**
+   - Frameworks like Spring Boot provide annotations like `@Value` to inject properties directly into your code.
+
+   ```java
+   @SpringBootApplication
+   public class MyApplication {
+
+       @Value("${server.port}")
+       private int port;
+
+       @Value("${app.name}")
+       private String appName;
+
+       public static void main(String[] args) {
+           SpringApplication.run(MyApplication.class, args);
+       }
+   }
+   ```
+
+2. **Environment Profiles:**
+   - Create separate `application*.properties` files (e.g., `application-dev.properties`, `application-prod.properties`) to define environment-specific configurations.
+   - These files can override or extend the default `application.properties`.
+   - Activate a profile during startup (e.g., with command line arguments or environment variables) to use its settings.
+
+   ```
+   # application-dev.properties
+   server.port=8081  # Development server port
+
+   # application-prod.properties
+   database.url=jdbc:mysql://production.host:3306/mydatabase  # Production database
+   ```
+
+   - Run with a profile:
+     ```bash
+     # Using environment variable
+     SPRING_PROFILES_ACTIVE=dev java -jar my-app.jar
+
+     # Using command line argument
+     java -jar my-app.jar --spring.profiles.active=dev
+     ```
+
+**Benefits of Using `application.properties`:**
+
+- **Maintainability:** Keeps configurations separate from code, making changes easier.
+- **Flexibility:** Supports various data types and environment-specific settings.
+- **Centrality:** Provides a single source of truth for application settings.
+- **Security:** Sensitive information can be stored externally (e.g., environment variables) and accessed securely.
+
+By effectively using `application.properties`, you can improve the flexibility, maintainability, and security of your application configurations during development and across different environments.
+
+### How YAML offers a more user-friendly approach to configuration management:
+
+**Your Converted `application.yml`:**
+
+```yaml
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    url: jdbc:mysql://localhost:3306/dcbapp
+    password: varun
+  application:
+    name: OneShot
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+welcome:
+  message: Welcome to App this is message from config!!
+server:
+  port: 8081
+```
+
+**Benefits of YAML over Properties:**
+
+- **Improved Readability:** YAML uses indentation and nesting to represent hierarchy, making the structure clear and visually appealing compared to the key-value format of properties files.
+- **Conciseness:** You can omit repeated prefixes like `spring.datasource` because YAML infers parent-child relationships.
+- **Lists and Collections:** YAML allows defining lists and collections within properties using square brackets `[]` instead of commas in properties files.
+- **Comments:** YAML supports comments denoted by `#` for adding explanations to your configurations, enhancing code understanding.
+
+**Guidelines for Using YAML:**
+
+- **Indentation:** Consistent indentation (usually 2 spaces) defines the hierarchy. Incorrect indentation can lead to errors.
+- **Nesting:** Use proper indentation to create nested structures within your configuration.
+- **Quotes:** Use single quotes (`'`) for simple values or strings containing special characters. Double quotes (`"`) are optional otherwise.
+- **Lists:** Use square brackets `[]` to define lists of strings or values.
+- **Booleans:** Represent booleans as `true` or `false`.
+- **Comments:** Add comments using `#` at the beginning of a line. Multi-line comments are not supported.
+
+
+**In summary:**
+
+YAML provides a more intuitive and developer-friendly way to manage application configurations with its indentation-based structure, concise syntax, and comment support. By following the key guidelines, you can effectively leverage YAML for readable, maintainable, and well-documented configuration files in your Spring application.
+
+## Spring-Boot Profiles
+
+**What are Profiles?**
+
+In Spring Boot, profiles are a mechanism for activating different configurations based on the environment in which your application is running. This allows you to tailor your application's behavior and settings for development, testing, quality assurance (QA), production, or other specific contexts.
+
+**Benefits of Using Profiles:**
+
+- **Isolation:** Profiles create separate environments for different stages of development and deployment. This prevents accidental changes or conflicts between configurations.
+- **Flexibility:** You can easily switch between profiles to test or deploy your application in various environments without modifying the main configuration.
+- **Maintainability:** Profiles help organize and manage configurations, making them easier to understand and update.
+- **Customization:** You can customize your application's behavior and settings for each profile to match the requirements of the specific environment.
+
+**How Profiles Work:**
+
+1. **Configuration Files:** You create separate configuration files for each profile, typically named `application-<profile>.yml` or `application-<profile>.properties`.
+2. **Profile Activation:** You activate a specific profile when starting your application. This can be done using command-line arguments, environment variables, or programmatically.
+3. **Configuration Loading:** Spring Boot loads the configuration file corresponding to the active profile. If a setting is defined in both the default `application.yml` and the profile-specific file, the profile-specific value takes precedence.
+
+**Example from Your Configuration:**
+
+In your example, you have three profiles defined: `dev`, `qa`, and `prod`. Each profile has its own configuration settings, including the database URL, username, and password.
+
+**Activating Profiles:**
+
+- **Command-line argument:**
+  ```bash
+  java -jar your-app.jar --spring.profiles.active=dev
+  ```
+- **Environment variable:**
+  ```bash
+  SPRING_PROFILES_ACTIVE=qa java -jar your-app.jar
+  ```
+- **Programmatically:**
+  ```java
+  SpringApplication app = new SpringApplication(YourApplication.class);
+  app.setAdditionalProfiles("prod");
+  app.run(args);
+  ```
+
+**Default Profile:**
+
+If no profile is explicitly activated, Spring Boot uses the `default` profile by default. You can customize the default profile using the `spring.profiles.default` property in your `application.yml` file.
+
+**Best Practices:**
+
+- Use meaningful profile names that reflect their purpose (e.g., `dev`, `qa`, `prod`).
+- Keep profile-specific configurations concise and focused on environment-specific settings.
+- Consider using profiles for features that are not yet ready for production or for testing different configurations.
+- Document your profiles and their associated configurations for future reference.
+
+By effectively using profiles, you can enhance the flexibility, maintainability, and manageability of your Spring Boot applications across different environments.
+
+## Build + Deploy 
+When you build and run a Spring Boot application with multiple profiles, several steps take place between running the `mvn clean install` command and executing the JAR file with the `--spring.profiles.active` argument. Here’s the step-by-step process:
+
+### 1. **mvn clean install**
+- **`clean`**: Deletes any previously compiled classes and resources in the `target/` directory, ensuring a fresh build.
+- **`install`**: Builds the project and installs the resulting artifact (JAR or WAR) into the local Maven repository.
+
+During the `mvn install` process:
+- **Source Compilation**: Maven compiles the Java source files in the project based on the dependencies defined in the `pom.xml`.
+- **Profile-specific Configuration**: Spring profiles (`application-{profile}.properties` or `.yaml`) are included in the JAR but not activated at this stage.
+- **Testing**: If there are tests (e.g., using JUnit), they are run during this phase.
+- **Packaging**: After successful compilation and testing, Maven packages the project into a JAR file that includes all dependencies using the Spring Boot Maven plugin.
+- The result is a **fat JAR**, meaning all the necessary dependencies are bundled within the JAR file.
+
+### 2. **java -jar <MyJarFile> --spring.profiles.active=<activeProfile>**
+
+When you run this command, several things happen:
+
+#### a. **JAR Execution**
+- The **JVM** loads the JAR file and starts the Spring Boot application by calling the `main` method of the class annotated with `@SpringBootApplication`.
+- The `SpringApplication.run` method is invoked to launch the Spring context.
+
+#### b. **Profile Activation**
+- The `--spring.profiles.active=<activeProfile>` flag tells Spring Boot which profile to activate during the application's startup.
+- **Spring Profiles**: Spring profiles allow the application to have different configurations for different environments (e.g., development, production, testing). These are typically defined in `application-{profile}.properties` or `application-{profile}.yaml` files.
+
+Spring will:
+- Load the default configuration from `application.properties` or `application.yaml`.
+- Override or merge it with the configuration found in `application-{activeProfile}.properties` or `application-{activeProfile}.yaml`.
+
+#### c. **Spring Boot Application Initialization**
+- **Auto-configuration**: Spring Boot starts scanning the classpath and applies auto-configuration based on available dependencies (e.g., a web server, database configuration).
+- **Component Scanning**: It looks for `@Component`, `@Service`, `@Repository`, and `@Controller` annotations to create beans and wire them into the application.
+- **Bean Creation and Dependency Injection**: Spring creates and injects beans based on the configuration defined in the active profile and auto-configuration.
+
+#### d. **Profile-specific Bean Configuration**
+- If there are any beans or components defined with `@Profile("<profileName>")`, only the beans matching the active profile are instantiated. Other profile-specific beans are ignored.
+- For example:
+  ```java
+  @Profile("dev")
+  @Bean
+  public DataSource devDataSource() {
+      return new HikariDataSource();
+  }
+  ```
+
+#### e. **Environment Setup**
+- Any profile-specific settings (e.g., `spring.datasource.url`, `server.port`, etc.) are applied.
+- If you have environment-specific logging, database, or caching configurations, they will be used based on the active profile.
+
+#### f. **Application Startup**
+- The embedded server (like Tomcat or Jetty, if applicable) is started, and your application is ready to receive requests, with the configuration specific to the active profile.
+
+### Recap of the process:
+1. **mvn clean install**: Compiles, runs tests, packages the JAR.
+2. **java -jar**: Starts the JAR with a specific active profile, loading profile-specific configurations.
+3. **Spring Boot Initialization**: Initializes the application context, injects beans, and applies profile-based settings.
+4. **Application is live**: The application runs with the specified active profile's configurations.
+
+## Spring Boot actuator 
+### **Spring Boot Actuator: A Comprehensive Guide**
+
+#### **What is Spring Boot Actuator?**
+Spring Boot Actuator is a powerful set of production-ready features that help you monitor and manage Spring Boot applications. It provides various useful endpoints that allow you to interact with your application and gather important information such as health status, metrics, environment properties, and more.
+
+The main benefits of Spring Boot Actuator are:
+- **Monitoring and Health Checks**: Provides metrics and health endpoints to monitor the state of the application.
+- **Operational Management**: Allows you to manage and configure the application at runtime.
+- **Easy Integration with Monitoring Systems**: Actuator endpoints can be integrated with monitoring systems such as Prometheus, Grafana, or ELK.
+
+---
+
+### **Getting Started with Spring Boot Actuator**
+
+#### **Step 1: Adding Actuator Dependency**
+To use Spring Boot Actuator, you need to add the following dependency to your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+#### **Step 2: Enabling Actuator Endpoints**
+
+By default, most of the Actuator endpoints are disabled except for `/health` and `/info`. You can enable specific endpoints in your `application.properties` or `application.yaml` file.
+
+```properties
+# Enable all endpoints
+management.endpoints.web.exposure.include=*
+
+# Alternatively, enable specific endpoints
+management.endpoints.web.exposure.include=health,info,metrics
+```
+
+Once you configure this, Spring Boot will expose various endpoints such as:
+- **/actuator/health**: Displays the health status of the application.
+- **/actuator/info**: Provides application information (like version, build, etc.).
+- **/actuator/metrics**: Exposes various metrics such as memory usage, CPU, and other performance indicators.
+
+#### **Step 3: Common Actuator Endpoints**
+Here are a few commonly used Actuator endpoints:
+
+1. **/actuator/health**: Displays the health status of the application.
+   - Example:
+     ```json
+     {
+         "status": "UP",
+         "components": {
+             "db": {
+                 "status": "UP"
+             },
+             "diskSpace": {
+                 "status": "UP"
+             }
+         }
+     }
+     ```
+
+2. **/actuator/info**: Displays arbitrary application information defined in `application.properties` or `application.yaml`.
+   - Example configuration:
+     ```properties
+     info.app.name=My Application
+     info.app.version=1.0.0
+     ```
+
+3. **/actuator/metrics**: Displays various performance and resource utilization metrics.
+   - Example metrics:
+     ```json
+     {
+         "name": "jvm.memory.used",
+         "measurements": [
+             {
+                 "statistic": "value",
+                 "value": 12345678
+             }
+         ],
+         "availableTags": []
+     }
+     ```
+
+4. **/actuator/env**: Displays the environment properties used in the application.
+
+5. **/actuator/loggers**: Displays and manages the logging levels of the application at runtime.
+
+---
+
+### **Creating a Custom Actuator Endpoint**
+
+Sometimes the default Actuator endpoints may not fulfill your requirements. In such cases, you can create a custom Actuator endpoint.
+
+#### **Step 1: Create a Custom Actuator**
+
+To create a custom actuator, you need to use the `@Endpoint` annotation to mark your class as an endpoint and provide a method to expose the custom data.
+
+#### Example: Custom `/actuator/feature-flags` Endpoint
+
+1. **Step 1: Define a Custom Endpoint Class**
+   - Create a class and annotate it with `@Endpoint`.
+
+```java
+import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Component
+@Endpoint(id = "feature-flags")
+public class FeatureFlagsEndpoint {
+
+    private final Map<String, Boolean> featureFlags = new HashMap<>();
+
+    public FeatureFlagsEndpoint() {
+        // Sample feature flags
+        featureFlags.put("featureA", true);
+        featureFlags.put("featureB", false);
+    }
+
+    @ReadOperation
+    public Map<String, Boolean> getFeatureFlags() {
+        return featureFlags;
+    }
+}
+```
+
+In this example:
+- We define a custom actuator called `/actuator/feature-flags`.
+- The `@ReadOperation` annotation defines that this method should be invoked when making a `GET` request to the custom endpoint.
+
+2. **Step 2: Expose the Custom Endpoint**
+   - Make sure you expose the new custom endpoint by configuring the `application.properties`:
+
+```properties
+management.endpoints.web.exposure.include=feature-flags,health,info
+```
+
+#### **Step 2: Access the Custom Endpoint**
+Once everything is set up, you can access the custom endpoint like this:
+
+```
+http://localhost:8080/actuator/feature-flags
+```
+
+Example response:
+```json
+{
+    "featureA": true,
+    "featureB": false
+}
+```
+
+---
+
+### **Types of Actuator Operations**
+
+Spring Boot Actuator endpoints can support several types of operations:
+- **@ReadOperation**: Exposes data (usually `GET` requests).
+- **@WriteOperation**: Performs operations that modify the system state (usually `POST` or `PUT` requests).
+- **@DeleteOperation**: Deletes something from the system (usually `DELETE` requests).
+
+#### Example: Write Operation in a Custom Actuator
+
+```java
+import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
+import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Component
+@Endpoint(id = "feature-flags")
+public class FeatureFlagsEndpoint {
+
+    private final Map<String, Boolean> featureFlags = new HashMap<>();
+
+    public FeatureFlagsEndpoint() {
+        featureFlags.put("featureA", true);
+        featureFlags.put("featureB", false);
+    }
+
+    @ReadOperation
+    public Map<String, Boolean> getFeatureFlags() {
+        return featureFlags;
+    }
+
+    @WriteOperation
+    public void setFeatureFlag(String featureName, Boolean enabled) {
+        featureFlags.put(featureName, enabled);
+    }
+}
+```
+
+In this example, the `@WriteOperation` allows us to modify the state of feature flags. You can make a `POST` request to update the feature flag state.
+
+---
+
+### **Securing Actuator Endpoints**
+
+By default, sensitive Actuator endpoints are only accessible locally, but you can secure them further:
+
+1. **Configure Security in `application.properties`:**
+```properties
+management.endpoints.web.exposure.include=health,info,metrics
+management.endpoint.health.probes.enabled=true
+management.endpoint.health.show-details=always
+management.security.enabled=true
+```
+
+2. **Role-based access to Actuator endpoints using Spring Security:**
+   If you're using Spring Security, you can restrict access to certain endpoints. For example, only allow users with the role `ADMIN` to access the `/actuator/shutdown` endpoint.
+
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+        .authorizeRequests()
+        .requestMatchers(EndpointRequest.to("health", "info")).permitAll() // public endpoints
+        .requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN") // restrict other endpoints
+        .and()
+        .httpBasic(); // basic auth for secured endpoints
+}
+```
+
+---
+
+### **Conclusion**
+
+Spring Boot Actuator is a powerful tool for monitoring, managing, and interacting with Spring Boot applications. By enabling various built-in endpoints, you can gain insight into the application's health, metrics, and runtime behavior. Additionally, custom endpoints give you the flexibility to expose your own operational data.
+
+Let me know if you'd like more examples or if you have any questions!
+
+
+
